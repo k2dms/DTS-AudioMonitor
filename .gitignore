@@ -1,4 +1,5 @@
 # Runtime / local
+commit-msg.txt
 watch.log
 *.lock
 devices.csv
