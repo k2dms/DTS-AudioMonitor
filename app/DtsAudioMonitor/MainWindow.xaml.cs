@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using DtsAudioMonitor.ViewModels;
@@ -75,6 +76,17 @@ public partial class MainWindow : Window
             DeviceKindLabel.Foreground = (Brush)FindResource("MutedBrush");
         }
     }
+
+    private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount == 2) return;
+        try { DragMove(); }
+        catch { /* ignore drag race */ }
+    }
+
+    private void Minimize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+
+    private void HideToTray_Click(object sender, RoutedEventArgs e) => Hide();
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {

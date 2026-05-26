@@ -9,7 +9,7 @@
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <AssemblyName>DtsAudioMonitor</AssemblyName>
     <RootNamespace>DtsAudioMonitor</RootNamespace>
-    <Version>1.1.1</Version>
+    <Version>1.1.2</Version>
     <Authors>k2dms</Authors>
     <Description>DTS Headphone:X background monitor for XV272U F3</Description>
   </PropertyGroup>

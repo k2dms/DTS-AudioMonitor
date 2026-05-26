@@ -11,7 +11,7 @@
 
 ## Скачать (готовый exe)
 
-**[Релиз v1.1.1](https://github.com/k2dms/DTS-AudioMonitor/releases/tag/v1.1.1)** — скачайте `DtsAudioMonitor-v1.1.1-win-x64.zip` (~64 MB).
+**[Релиз v1.1.2](https://github.com/k2dms/DTS-AudioMonitor/releases/tag/v1.1.2)** — скачайте `DtsAudioMonitor-v1.1.2-win-x64.zip` (~64 MB).
 
 1. Распакуйте архив в любую папку.
 2. Запустите **`DtsAudioMonitor.exe`** (или `Start DTS Audio Monitor.bat`).

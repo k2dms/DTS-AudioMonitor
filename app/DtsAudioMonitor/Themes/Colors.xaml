@@ -43,4 +43,15 @@
         <GradientStop Color="#090B10" Offset="1" />
     </LinearGradientBrush>
 
+    <LinearGradientBrush x:Key="HeroOverlayBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#20FFFFFF" Offset="0" />
+        <GradientStop Color="#00FFFFFF" Offset="0.55" />
+        <GradientStop Color="#15FFFFFF" Offset="1" />
+    </LinearGradientBrush>
+
+    <RadialGradientBrush x:Key="AmbientGlowBrush" GradientOrigin="0.2,0.1" Center="0.2,0.1" RadiusX="0.9" RadiusY="0.7">
+        <GradientStop Color="#286B5CE7" Offset="0" />
+        <GradientStop Color="#00000000" Offset="1" />
+    </RadialGradientBrush>
+
 </ResourceDictionary>
