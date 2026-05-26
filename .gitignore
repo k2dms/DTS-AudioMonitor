@@ -5,6 +5,7 @@ service.log
 service-state.json
 app.log
 publish/
+release/
 app/DtsAudioMonitor/bin/
 app/DtsAudioMonitor/obj/
 _check-*.ps1
