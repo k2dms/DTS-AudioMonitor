@@ -8,7 +8,6 @@
         FontFamily="Segoe UI Variable Display, Segoe UI"
         ResizeMode="CanMinimize"
         ShowInTaskbar="True"
-        Icon="Assets/app.ico"
         TextOptions.TextFormattingMode="Display"
         UseLayoutRounding="True"
         SnapsToDevicePixels="True">
@@ -39,8 +38,12 @@
                 </Grid.ColumnDefinitions>
 
                 <Border Width="56" Height="56" CornerRadius="16" Background="#30FFFFFF" Margin="0,0,16,0">
-                    <Image Source="pack://application:,,,/Assets/logo.png" Width="44" Height="44"
-                           RenderOptions.BitmapScalingMode="HighQuality" />
+                    <Grid>
+                        <Image x:Name="HeroLogoImage" Width="44" Height="44"
+                               RenderOptions.BitmapScalingMode="HighQuality" Visibility="Collapsed" />
+                        <TextBlock x:Name="HeroLogoFallback" Text="&#xE7F6;" FontFamily="Segoe MDL2 Assets" FontSize="26"
+                                   Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Grid>
                 </Border>
 
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
