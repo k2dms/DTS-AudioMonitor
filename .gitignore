@@ -3,6 +3,11 @@ commit-msg.txt
 watch.log
 service.log
 service-state.json
+app.log
+publish/
+app/DtsAudioMonitor/bin/
+app/DtsAudioMonitor/obj/
+_check-*.ps1
 _svv-stab.txt
 _probe-*.ps1
 _find-*.ps1

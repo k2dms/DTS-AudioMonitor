@@ -1,76 +1,66 @@
 # DTS Audio Monitor
 
-Автоматизация **DTS Headphone:X** для связки **Headphones (HyperX Cloud III)** + **XV272U F3**.
+Фоновая программа для **DTS Headphone:X** с монитором **XV272U F3** и наушниками **HyperX Cloud III**.
 
-## Поведение (фоновая служба)
+## Поведение
 
-| Устройство по умолчанию | Действие |
-|-------------------------|----------|
-| **Headphones (HyperX Cloud III)** | Только проверка/включение пространственного звука. Устройство **не переключается**. |
-| Переключение **на XV272U F3** | Полный цикл: Headphones → DTS Sound Unbound → DTS Headphone:X → обратно на монитор. |
+| Устройство | Что делает программа |
+|------------|----------------------|
+| **Headphones** | Только проверяет и включает пространственный звук. Устройство **не переключает**. |
+| **Переключение на XV272U F3** | Полный цикл: наушники → DTS Sound Unbound → DTS Headphone:X → снова монитор. |
 
-> **Почему не классическая Windows Service (services.msc)?**  
-> DTS Sound Unbound и переключение звука работают в **сессии пользователя** (нужен рабочий стол).  
-> Установка делается через **Планировщик заданий** при входе в Windows: автозапуск, перезапуск при сбое, скрытый процесс — по сути фоновая служба для вашего аккаунта.
+## Быстрый старт
 
-## Установка
+### 1. Сборка (нужен [.NET 8 SDK](https://dotnet.microsoft.com/download))
 
 ```powershell
 cd C:\Users\dms\Scripts\DTS-AudioMonitor
-.\Install-DtsAudioTools.ps1
+.\Install-DtsApp.ps1
 ```
 
-**Служба (автозапуск при входе)** — PowerShell **от администратора**:
+Создаёт `publish\DtsAudioMonitor.exe`, ярлык в автозагрузке и запускает приложение в трее.
+
+### 2. Или без автозагрузки
 
 ```powershell
-.\Install-DtsService.ps1
+.\Build-App.ps1
+.\publish\DtsAudioMonitor.exe
 ```
 
-## Управление
+Двойной щелчок по иконке в трее — открыть окно.
 
-```powershell
-.\Get-DtsServiceStatus.ps1   # статус и последние строки лога
-.\Start-DtsService.ps1        # запустить задачу
-.\Stop-DtsService.ps1         # остановить
-.\Uninstall-DtsService.ps1    # удалить автозапуск (админ)
-```
+## Интерфейс
 
-Лог: `service.log`  
-Состояние: `service-state.json`  
-Настройки: `config.json`
+- **Автоматический режим** — фоновый мониторинг (можно поставить на паузу).
+- **Применить DTS для монитора** — ручной запуск полного цикла.
+- **Запускать с Windows** — ярлык в папке «Автозагрузка».
+- **Журнал** — последние события.
 
-## Ручной запуск цикла для монитора
+## Настройки
 
-`Run-DtsFix.bat` или:
-
-```powershell
-.\Enable-DtsForXV272U.ps1
-```
-
-## config.json
+Файл `config.json` (рядом с exe после сборки):
 
 ```json
 {
   "HeadphonesNameMatch": "Headphones*",
   "MonitorNameMatch": "XV272U*",
   "HeadphonesCheckSeconds": 300,
-  "MonitorFixCooldownSeconds": 45,
   "PollSeconds": 3
 }
 ```
 
-Измените имена устройств, если в Windows они называются иначе.
+## Старая версия (PowerShell)
 
-## Файлы
+Скрипты `DtsAudioMonitor.Service.ps1` и `Install-DtsService.ps1` остаются в репозитории. Рекомендуется использовать **GUI-приложение** вместо задачи планировщика.
 
-| Файл | Назначение |
-|------|------------|
-| `DtsAudioMonitor.Service.ps1` | Фоновый worker |
-| `DtsAudioMonitor.Common.ps1` | Общая логика |
-| `Install-DtsService.ps1` | Установка автозапуска |
-| `Enable-DtsForXV272U.ps1` | Ручной полный цикл |
+## Структура
 
-## Зависимости
+```
+app/DtsAudioMonitor/     — исходники WPF
+publish/                 — готовый exe (после Build-App.ps1)
+SoundVolumeView/         — утилита spatial sound (скачивается установщиком)
+```
 
-- [AudioDeviceCmdlets](https://github.com/frgnca/AudioDeviceCmdlets) — переключение устройств
-- [SoundVolumeView](https://www.nirsoft.net/utils/sound_volume_view.html) — пространственный звук (скачивается установщиком)
+## GitHub
+
+https://github.com/k2dms/DTS-AudioMonitor
