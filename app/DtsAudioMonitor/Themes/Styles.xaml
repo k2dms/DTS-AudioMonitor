@@ -164,10 +164,13 @@
         <Setter Property="FontSize" Value="11.5" />
         <Setter Property="FontFamily" Value="Cascadia Mono, Consolas, Segoe UI" />
         <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Hidden" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListBox">
-                    <ScrollViewer Padding="0,2,4,2">
+                    <ScrollViewer Padding="0,2,0,2"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  VerticalScrollBarVisibility="Hidden">
                         <ItemsPresenter />
                     </ScrollViewer>
                 </ControlTemplate>
