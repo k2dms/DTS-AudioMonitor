@@ -1,0 +1,12 @@
+# Runtime / local
+watch.log
+*.lock
+devices.csv
+devices-after.csv
+svv-out.txt
+svv-err.txt
+
+# SoundVolumeView is downloaded by Install-DtsAudioTools.ps1 (NirSoft)
+SoundVolumeView/SoundVolumeView.exe
+SoundVolumeView/SoundVolumeView.chm
+SoundVolumeView.zip
