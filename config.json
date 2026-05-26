@@ -1,0 +1,11 @@
+{
+  "HeadphonesNameMatch": "Headphones*",
+  "MonitorNameMatch": "XV272U*",
+  "HeadphonesFriendlyId": "HyperX Cloud III\\Device\\Headphones\\Render",
+  "MonitorFriendlyId": "NVIDIA High Definition Audio\\Device\\XV272U F3\\Render",
+  "HeadphonesRegistryGuid": "{e0cb2f31-49bb-444d-bf05-d086c762cc93}",
+  "SpatialFormat": "DTS Headphone:X",
+  "PollSeconds": 3,
+  "MonitorFixCooldownSeconds": 45,
+  "HeadphonesCheckSeconds": 300
+}

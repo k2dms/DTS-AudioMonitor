@@ -1,6 +1,11 @@
 # Runtime / local
 commit-msg.txt
 watch.log
+service.log
+service-state.json
+_svv-stab.txt
+_probe-*.ps1
+_find-*.ps1
 *.lock
 devices.csv
 devices-after.csv
