@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using System.IO;
 using System.Windows;
 using Hardcodet.Wpf.TaskbarNotification;
 using DtsAudioMonitor.ViewModels;
@@ -25,11 +26,12 @@ public partial class App : System.Windows.Application
 
         _window = new MainWindow(_vm);
 
+        var appIcon = LoadAppIcon();
         _tray = new TaskbarIcon
         {
             ToolTipText = "DTS Audio Monitor",
             ContextMenu = BuildTrayMenu(),
-            Icon = Icon.ExtractAssociatedIcon(Environment.ProcessPath!) ?? SystemIcons.Application
+            Icon = appIcon
         };
         _tray.TrayMouseDoubleClick += (_, _) => ShowMain();
 
@@ -58,6 +60,21 @@ public partial class App : System.Windows.Application
         menu.Items.Add(exit);
 
         return menu;
+    }
+
+    private static Icon LoadAppIcon()
+    {
+        var paths = new[]
+        {
+            Path.Combine(AppContext.BaseDirectory, "Assets", "app.ico"),
+            Path.Combine(AppContext.BaseDirectory, "app.ico")
+        };
+        foreach (var p in paths)
+        {
+            if (File.Exists(p))
+                return new Icon(p);
+        }
+        return Icon.ExtractAssociatedIcon(Environment.ProcessPath!) ?? SystemIcons.Application;
     }
 
     private void ShowMain()

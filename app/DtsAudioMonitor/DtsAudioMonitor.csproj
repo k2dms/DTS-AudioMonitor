@@ -6,9 +6,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <AssemblyName>DtsAudioMonitor</AssemblyName>
     <RootNamespace>DtsAudioMonitor</RootNamespace>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Authors>k2dms</Authors>
     <Description>DTS Headphone:X background monitor for XV272U F3</Description>
   </PropertyGroup>
@@ -20,6 +21,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Assets\logo.png" />
+    <Content Include="Assets\app.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\logo.png" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\config.json" Link="config.json" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\SoundVolumeView\SoundVolumeView.exe" Link="SoundVolumeView\SoundVolumeView.exe" CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\..\SoundVolumeView\SoundVolumeView.exe')" />
     <Content Include="..\..\SoundVolumeView\readme.txt" Link="SoundVolumeView\readme.txt" CopyToOutputDirectory="PreserveNewest" />

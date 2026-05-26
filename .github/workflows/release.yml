@@ -37,6 +37,10 @@ jobs:
             -p:EnableCompressionInSingleFile=true `
             -o $out
           Copy-Item config.json "$out/config.json" -Force
+          if (Test-Path "app/DtsAudioMonitor/Assets") {
+            New-Item -ItemType Directory -Force -Path "$out/Assets" | Out-Null
+            Copy-Item app/DtsAudioMonitor/Assets/* "$out/Assets/" -Force
+          }
           New-Item -ItemType Directory -Force -Path "$out/SoundVolumeView" | Out-Null
           Copy-Item SoundVolumeView/SoundVolumeView.exe "$out/SoundVolumeView/" -Force
           @'

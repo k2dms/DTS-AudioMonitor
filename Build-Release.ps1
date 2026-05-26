@@ -3,7 +3,8 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $proj = Join-Path $root 'app\DtsAudioMonitor\DtsAudioMonitor.csproj'
 $outDir = Join-Path $root 'release\DtsAudioMonitor'
-$zipPath = Join-Path $root 'release\DtsAudioMonitor-v1.0.0-win-x64.zip'
+$version = '1.1.0'
+$zipPath = Join-Path $root "release\DtsAudioMonitor-v$version-win-x64.zip"
 
 # Dependencies
 $svvDir = Join-Path $root 'SoundVolumeView'
@@ -52,7 +53,7 @@ pause
 '@ | Set-Content (Join-Path $outDir 'Install autostart.bat') -Encoding ASCII
 
 @'
-# DTS Audio Monitor v1.0.0
+# DTS Audio Monitor v1.1.0
 
 1. Распакуйте архив в любую папку (например C:\Apps\DtsAudioMonitor)
 2. Запустите **DtsAudioMonitor.exe** или **Start DTS Audio Monitor.bat**

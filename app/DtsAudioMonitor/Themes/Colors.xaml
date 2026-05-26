@@ -1,21 +1,46 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Color x:Key="BgColor">#0F1117</Color>
-    <Color x:Key="CardColor">#181B24</Color>
-    <Color x:Key="CardBorderColor">#2A2F3D</Color>
-    <Color x:Key="AccentColor">#7C6AF7</Color>
-    <Color x:Key="AccentHoverColor">#9485FF</Color>
-    <Color x:Key="TextColor">#E8EAEF</Color>
-    <Color x:Key="MutedColor">#8B93A7</Color>
-    <Color x:Key="SuccessColor">#3DDC97</Color>
-    <Color x:Key="WarnColor">#FFB347</Color>
+
+    <Color x:Key="BgColor">#090B10</Color>
+    <Color x:Key="BgElevatedColor">#12151D</Color>
+    <Color x:Key="CardColor">#161A24</Color>
+    <Color x:Key="CardHoverColor">#1C2130</Color>
+    <Color x:Key="CardBorderColor">#2B3142</Color>
+    <Color x:Key="AccentColor">#8B7CFF</Color>
+    <Color x:Key="AccentDeepColor">#5E4FD9</Color>
+    <Color x:Key="AccentGlowColor">#40A78BFA</Color>
+    <Color x:Key="TextColor">#F2F4F8</Color>
+    <Color x:Key="MutedColor">#8E96AB</Color>
+    <Color x:Key="SuccessColor">#4ADE9A</Color>
+    <Color x:Key="MonitorColor">#60A5FA</Color>
+    <Color x:Key="HeadphonesColor">#C084FC</Color>
 
     <SolidColorBrush x:Key="BgBrush" Color="{StaticResource BgColor}" />
+    <SolidColorBrush x:Key="BgElevatedBrush" Color="{StaticResource BgElevatedColor}" />
     <SolidColorBrush x:Key="CardBrush" Color="{StaticResource CardColor}" />
     <SolidColorBrush x:Key="CardBorderBrush" Color="{StaticResource CardBorderColor}" />
     <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
-    <SolidColorBrush x:Key="AccentHoverBrush" Color="{StaticResource AccentHoverColor}" />
+    <SolidColorBrush x:Key="AccentDeepBrush" Color="{StaticResource AccentDeepColor}" />
     <SolidColorBrush x:Key="TextBrush" Color="{StaticResource TextColor}" />
     <SolidColorBrush x:Key="MutedBrush" Color="{StaticResource MutedColor}" />
     <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}" />
+    <SolidColorBrush x:Key="MonitorBrush" Color="{StaticResource MonitorColor}" />
+    <SolidColorBrush x:Key="HeadphonesBrush" Color="{StaticResource HeadphonesColor}" />
+
+    <LinearGradientBrush x:Key="HeroGradientBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#3D2E9E" Offset="0" />
+        <GradientStop Color="#6B5CE7" Offset="0.45" />
+        <GradientStop Color="#9D8CFF" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="ButtonGradientBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#7B6CF5" Offset="0" />
+        <GradientStop Color="#9B8DFF" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="WindowBgGradientBrush" StartPoint="0.5,0" EndPoint="0.5,1">
+        <GradientStop Color="#10131C" Offset="0" />
+        <GradientStop Color="#090B10" Offset="1" />
+    </LinearGradientBrush>
+
 </ResourceDictionary>

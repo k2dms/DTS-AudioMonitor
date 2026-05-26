@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Threading;
@@ -21,7 +22,10 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     private bool _autoEnabled = true;
     private bool _startWithWindows;
     private bool _isBusy;
-    private string _statusText = "Ready";
+    private string _statusText = "Готов";
+
+    public string VersionLabel { get; } =
+        "v" + (Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.1.0");
 
     public MainViewModel()
     {
@@ -77,7 +81,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
             _autoEnabled = value;
             _engine.AutoEnabled = value;
             OnPropertyChanged();
-            StatusText = value ? "Auto ON" : "Paused";
+            StatusText = value ? "Активен" : "Пауза";
             AppendLog(value ? "Auto monitoring enabled." : "Auto monitoring paused.");
         }
     }
@@ -117,17 +121,17 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         if (IsBusy) return;
         IsBusy = true;
         FixCommand.RaiseCanExecuteChanged();
-        StatusText = "Working...";
+        StatusText = "Работа...";
         try
         {
             await _engine.RunMonitorFixNowAsync();
             RefreshDevice();
-            StatusText = "Done";
+            StatusText = "Готов";
         }
         catch (Exception ex)
         {
             AppendLog($"Fix failed: {ex.Message}");
-            StatusText = "Error";
+            StatusText = "Ошибка";
         }
         finally
         {

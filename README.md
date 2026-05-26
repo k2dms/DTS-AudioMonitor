@@ -9,7 +9,20 @@
 | **Headphones** | Только проверяет и включает пространственный звук. Устройство **не переключает**. |
 | **Переключение на XV272U F3** | Полный цикл: наушники → DTS Sound Unbound → DTS Headphone:X → снова монитор. |
 
-## Быстрый старт
+## Скачать (готовый exe)
+
+**[Релиз v1.1.0](https://github.com/k2dms/DTS-AudioMonitor/releases/tag/v1.1.0)** — скачайте `DtsAudioMonitor-v1.1.0-win-x64.zip` (~64 MB).
+
+1. Распакуйте архив в любую папку.
+2. Запустите **`DtsAudioMonitor.exe`** (или `Start DTS Audio Monitor.bat`).
+3. По желанию: **`Install autostart.bat`** — автозагрузка Windows.
+4. Установите [DTS Sound Unbound](https://apps.microsoft.com/detail/9pj0nkl8mcsj) из Microsoft Store.
+
+.NET ставить **не нужно** — всё уже внутри архива.
+
+---
+
+## Сборка из исходников
 
 ### 1. Сборка (нужен [.NET 8 SDK](https://dotnet.microsoft.com/download))
 
