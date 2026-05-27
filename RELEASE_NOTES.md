@@ -1,13 +1,13 @@
-# DTS Audio Monitor v1.1.7
+# DTS Audio Monitor v1.1.8
 
-## Изменения
+## Что нового
 
-- DTS Sound Unbound закрывается полностью **до** переключения обратно на монитор
-- Анимация появления и сворачивания окна (из трея / в трей)
+- DTS Sound Unbound запускается **скрыто** (окно уводится за экран, не мешает работе)
+- Настройка в `config.json`: `"DtsAppRunHidden": true` (по умолчанию включено)
 
 ## Установка
 
-1. Скачайте `DtsAudioMonitor-v1.1.7-win-x64.zip` из Assets.
+1. Скачайте `DtsAudioMonitor-v1.1.8-win-x64.zip` из Assets.
 2. Распакуйте и запустите **`Install Start Menu.bat`**.
 3. Запустите **`DtsAudioMonitor.exe`**.
 

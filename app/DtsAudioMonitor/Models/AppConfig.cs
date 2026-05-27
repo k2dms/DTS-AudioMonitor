@@ -14,6 +14,8 @@ public sealed class AppConfig
     public int PollSeconds { get; set; } = 3;
     public int MonitorFixCooldownSeconds { get; set; } = 45;
     public int HeadphonesCheckSeconds { get; set; } = 300;
+    /// <summary>Hide DTS Sound Unbound window while automating (off-screen / minimized).</summary>
+    public bool DtsAppRunHidden { get; set; } = true;
     public string SpatialDisabledGuid { get; set; } = "{00000000-0000-0000-0000-000000000000}";
     public bool StartWithWindows { get; set; }
 

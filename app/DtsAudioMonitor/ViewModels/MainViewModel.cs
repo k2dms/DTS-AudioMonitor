@@ -33,7 +33,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         _config = AppConfig.Load(AppPaths.ConfigPath);
 
         var spatial = new SpatialService(AppPaths.SoundVolumeViewExe, _config);
-        var dts = new DtsAppService();
+        var dts = new DtsAppService(_config.DtsAppRunHidden);
         _engine = new MonitorEngine(
             _config,
             _audio,

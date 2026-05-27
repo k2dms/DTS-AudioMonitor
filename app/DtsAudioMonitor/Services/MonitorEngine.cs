@@ -202,7 +202,9 @@ public sealed class MonitorEngine : IDisposable
 
             await Task.Delay(1500, ct);
 
-            _log("Monitor fix: DTS Sound Unbound...");
+            _log(_config.DtsAppRunHidden
+                ? "Monitor fix: DTS Sound Unbound (hidden)..."
+                : "Monitor fix: DTS Sound Unbound...");
             try
             {
                 await _dts.TryActivateHeadphoneXAsync(ct);

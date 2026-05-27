@@ -9,6 +9,10 @@ public sealed class DtsAppService
     private const string WindowName = "DTS Sound Unbound";
     private const string ProcessName = "DTSSoundUnbound";
 
+    private readonly bool _runHidden;
+
+    public DtsAppService(bool runHidden = true) => _runHidden = runHidden;
+
     public async Task<bool> TryActivateHeadphoneXAsync(CancellationToken ct)
     {
         for (var attempt = 1; attempt <= 3; attempt++)
@@ -51,9 +55,9 @@ public sealed class DtsAppService
         await Task.Delay(600, ct);
     }
 
-    private static async Task<bool> ActivateOnceAsync(CancellationToken ct)
+    private async Task<bool> ActivateOnceAsync(CancellationToken ct)
     {
-        await CloseAndWaitAsyncInternal(ct);
+        await CloseAndWaitAsync(ct);
 
         Process.Start(new ProcessStartInfo
         {
@@ -77,7 +81,10 @@ public sealed class DtsAppService
         if (window is null)
             throw new InvalidOperationException("DTS Sound Unbound window not found");
 
-        await Task.Delay(600, ct);
+        if (_runHidden)
+            DtsWindowHelper.HideFromView(window);
+
+        await Task.Delay(_runHidden ? 400 : 600, ct);
 
         if (!await TrySelectHeadphoneXAsync(window, ct))
             throw new InvalidOperationException("DTS Headphone:X control not found or not clickable");
@@ -94,16 +101,8 @@ public sealed class DtsAppService
             await Task.Delay(2800, ct);
         }
 
-        // Close DTS completely before any audio device switch
-        var service = new DtsAppService();
-        await service.CloseAndWaitAsync(ct);
+        await CloseAndWaitAsync(ct);
         return true;
-    }
-
-    private static async Task CloseAndWaitAsyncInternal(CancellationToken ct)
-    {
-        var service = new DtsAppService();
-        await service.CloseAndWaitAsync(ct);
     }
 
     private static void TryCloseWindowGracefully()

@@ -19,6 +19,7 @@ function Get-DtsConfig {
         PollSeconds               = 3
         MonitorFixCooldownSeconds = 45
         HeadphonesCheckSeconds    = 300
+        DtsAppRunHidden           = $true
         SpatialDisabledGuid       = '{00000000-0000-0000-0000-000000000000}'
     }
     if (Test-Path $path) {
@@ -116,8 +117,34 @@ function Invoke-DtsUiClick {
     return $false
 }
 
+function Hide-DtsAppWindow {
+    param($Window)
+    if (-not $Window) { return }
+    try {
+        Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class DtsWin32 {
+    [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+    [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hWnd, IntPtr ins, int x, int y, int cx, int cy, uint flags);
+}
+'@ -ErrorAction SilentlyContinue | Out-Null
+        $hwnd = [IntPtr]$Window.Current.NativeWindowHandle
+        if ($hwnd -ne [IntPtr]::Zero) {
+            [void][DtsWin32]::SetWindowPos($hwnd, [IntPtr]::Zero, -32000, -32000, 0, 0, 0x0011)
+            [void][DtsWin32]::ShowWindow($hwnd, 0)
+            return
+        }
+    } catch { }
+    try {
+        $wp = $Window.GetCurrentPattern([Windows.Automation.WindowPattern]::Pattern)
+        $wp.SetWindowVisualState([Windows.Automation.WindowVisualState]::Minimized)
+    } catch { }
+}
+
 function Start-DtsSoundUnboundApp {
     param([switch]$Quiet)
+    $config = Get-DtsConfig
     Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes | Out-Null
 
     Get-Process -Name 'DTSSoundUnbound*' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
@@ -134,6 +161,11 @@ function Start-DtsSoundUnboundApp {
         if ($window) { break }
     }
     if (-not $window) { throw 'DTS Sound Unbound window not found' }
+
+    if ($config.DtsAppRunHidden) {
+        Hide-DtsAppWindow $window
+        Start-Sleep -Milliseconds 400
+    }
 
     $clicked = $false
     for ($try = 0; $try -lt 25; $try++) {
