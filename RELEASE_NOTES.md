@@ -1,16 +1,13 @@
-# DTS Audio Monitor v1.1.5
+# DTS Audio Monitor v1.1.6
 
-## Что нового
+## Исправления
 
-- Регистрация в меню **Пуск** (ярлык «DTS Audio Monitor»)
-- Отображение в **Параметры → Приложения → Установленные приложения**
-- Скрипты `Install Start Menu.bat` и `Uninstall-DtsApp.ps1`
-- При первом запуске exe ярлык создаётся сам
+- Только один экземпляр в трее (mutex + завершение дубликатов)
+- Повторный запуск из Пуска открывает уже работающее приложение
 
 ## Установка
 
-1. Скачайте `DtsAudioMonitor-v1.1.5-win-x64.zip` из Assets.
-2. Распакуйте в любую папку.
-3. Запустите **`Install Start Menu.bat`** (или один раз **`DtsAudioMonitor.exe`**).
-4. (Опционально) **`Install autostart.bat`** — автозагрузка.
+1. Скачайте `DtsAudioMonitor-v1.1.6-win-x64.zip` из Assets.
+2. Распакуйте и запустите **`Install Start Menu.bat`**.
+3. Запустите **`DtsAudioMonitor.exe`**.
 

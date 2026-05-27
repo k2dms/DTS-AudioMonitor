@@ -3,7 +3,7 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $proj = Join-Path $root 'app\DtsAudioMonitor\DtsAudioMonitor.csproj'
 $outDir = Join-Path $root 'release\DtsAudioMonitor'
-$version = '1.1.5'
+$version = '1.1.6'
 $zipPath = Join-Path $root "release\DtsAudioMonitor-v$version-win-x64.zip"
 
 # Dependencies

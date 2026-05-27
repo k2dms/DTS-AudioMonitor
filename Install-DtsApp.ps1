@@ -38,5 +38,7 @@ if (-not $NoStartup) {
     Write-Host "Autostart: $lnk"
 }
 
+Get-Process -Name DtsAudioMonitor -ErrorAction SilentlyContinue | Stop-Process -Force
+Start-Sleep -Milliseconds 800
 Write-Host 'Starting app...'
 Start-Process $exe -ArgumentList '--minimized'

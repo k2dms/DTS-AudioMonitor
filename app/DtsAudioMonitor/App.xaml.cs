@@ -9,13 +9,18 @@ namespace DtsAudioMonitor;
 
 public partial class App : System.Windows.Application
 {
+    private SingleInstance? _singleInstance;
     private TaskbarIcon? _tray;
     private MainWindow? _window;
     private MainViewModel? _vm;
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        if (!SingleInstance.TryStart(() => Shutdown(0), ActivateFromRunningInstance, out _singleInstance))
+            return;
+
         base.OnStartup(e);
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
         ShellRegistration.Apply();
 
         _vm = new MainViewModel();
@@ -41,6 +46,15 @@ public partial class App : System.Windows.Application
             _window.Hide();
         else
             _window.Show();
+    }
+
+    private void ActivateFromRunningInstance()
+    {
+        Dispatcher.BeginInvoke(() =>
+        {
+            ShowMain();
+            _tray?.ShowBalloonTip("DTS Audio Monitor", "Уже запущен — открыто существующее окно.", BalloonIcon.Info);
+        });
     }
 
     private System.Windows.Controls.ContextMenu BuildTrayMenu()
@@ -91,6 +105,8 @@ public partial class App : System.Windows.Application
     {
         _vm?.Dispose();
         _tray?.Dispose();
+        _singleInstance?.Dispose();
+        _singleInstance = null;
         Shutdown();
     }
 
@@ -98,6 +114,7 @@ public partial class App : System.Windows.Application
     {
         _vm?.Dispose();
         _tray?.Dispose();
+        _singleInstance?.Dispose();
         base.OnExit(e);
     }
 }
