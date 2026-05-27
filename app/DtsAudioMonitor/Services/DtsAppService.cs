@@ -7,6 +7,7 @@ public sealed class DtsAppService
 {
     private const string AppUri = "shell:AppsFolder\\DTSInc.DTSSoundUnbound_t5j2fzbtdg37r!App";
     private const string WindowName = "DTS Sound Unbound";
+    private const string ProcessName = "DTSSoundUnbound";
 
     public async Task<bool> TryActivateHeadphoneXAsync(CancellationToken ct)
     {
@@ -30,14 +31,29 @@ public sealed class DtsAppService
         return false;
     }
 
-    private static async Task<bool> ActivateOnceAsync(CancellationToken ct)
+    public async Task CloseAndWaitAsync(CancellationToken ct)
     {
-        foreach (var p in Process.GetProcessesByName("DTSSoundUnbound"))
+        TryCloseWindowGracefully();
+        KillDtsProcesses();
+
+        for (var i = 0; i < 50; i++)
         {
-            try { p.Kill(true); } catch { /* ignore */ }
+            ct.ThrowIfCancellationRequested();
+            if (Process.GetProcessesByName(ProcessName).Length == 0)
+            {
+                await Task.Delay(800, ct);
+                return;
+            }
+            await Task.Delay(200, ct);
         }
 
-        await Task.Delay(900, ct);
+        KillDtsProcesses();
+        await Task.Delay(600, ct);
+    }
+
+    private static async Task<bool> ActivateOnceAsync(CancellationToken ct)
+    {
+        await CloseAndWaitAsyncInternal(ct);
 
         Process.Start(new ProcessStartInfo
         {
@@ -78,13 +94,53 @@ public sealed class DtsAppService
             await Task.Delay(2800, ct);
         }
 
-        foreach (var p in Process.GetProcessesByName("DTSSoundUnbound"))
+        // Close DTS completely before any audio device switch
+        var service = new DtsAppService();
+        await service.CloseAndWaitAsync(ct);
+        return true;
+    }
+
+    private static async Task CloseAndWaitAsyncInternal(CancellationToken ct)
+    {
+        var service = new DtsAppService();
+        await service.CloseAndWaitAsync(ct);
+    }
+
+    private static void TryCloseWindowGracefully()
+    {
+        try
+        {
+            var window = AutomationElement.RootElement.FindFirst(
+                TreeScope.Children,
+                new PropertyCondition(AutomationElement.NameProperty, WindowName));
+            if (window is null) return;
+
+            if (window.TryGetCurrentPattern(WindowPattern.Pattern, out var p) && p is WindowPattern wp)
+            {
+                wp.Close();
+                return;
+            }
+
+            var closeBtn = window.FindFirst(
+                TreeScope.Descendants,
+                new AndCondition(
+                    new PropertyCondition(AutomationElement.NameProperty, "Close"),
+                    new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Button)));
+
+            TryClick(closeBtn);
+        }
+        catch
+        {
+            // Fall back to process kill
+        }
+    }
+
+    private static void KillDtsProcesses()
+    {
+        foreach (var p in Process.GetProcessesByName(ProcessName))
         {
             try { p.Kill(true); } catch { /* ignore */ }
         }
-
-        await Task.Delay(400, ct);
-        return true;
     }
 
     private static async Task<bool> TrySelectHeadphoneXAsync(AutomationElement window, CancellationToken ct)
@@ -127,7 +183,7 @@ public sealed class DtsAppService
                 return true;
             }
         }
-        catch { /* next pattern */ }
+        catch { /* next */ }
 
         try
         {
@@ -137,7 +193,7 @@ public sealed class DtsAppService
                 return true;
             }
         }
-        catch { /* next pattern */ }
+        catch { /* next */ }
 
         try
         {
@@ -148,7 +204,7 @@ public sealed class DtsAppService
                 return true;
             }
         }
-        catch { /* next pattern */ }
+        catch { /* next */ }
 
         try
         {

@@ -159,7 +159,18 @@ function Start-DtsSoundUnboundApp {
         }
     }
 
+    Wait-DtsAppClosed
+}
+
+function Wait-DtsAppClosed {
     Get-Process -Name 'DTSSoundUnbound*' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    for ($i = 0; $i -lt 50; $i++) {
+        if (-not (Get-Process -Name 'DTSSoundUnbound*' -ErrorAction SilentlyContinue)) {
+            Start-Sleep -Milliseconds 800
+            return
+        }
+        Start-Sleep -Milliseconds 200
+    }
 }
 
 function Set-DtsSpatialSound {
@@ -267,7 +278,8 @@ function Enable-DtsMonitorPlaybackFix {
     Set-DtsSpatialSound -DeviceFriendlyId $config.HeadphonesFriendlyId -Format $config.SpatialFormat
     Start-Sleep -Seconds 1
 
-    Write-DtsLog "Monitor fix: switch back to monitor ($($mon.Index))..." -Quiet:$Quiet
+    Wait-DtsAppClosed
+    Write-DtsLog "Monitor fix: DTS closed — switch back to monitor ($($mon.Index))..." -Quiet:$Quiet
     Set-AudioDevice -Index $mon.Index | Out-Null
 
     $state = Get-DtsState

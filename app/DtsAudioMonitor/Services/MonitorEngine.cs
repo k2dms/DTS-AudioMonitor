@@ -170,6 +170,7 @@ public sealed class MonitorEngine : IDisposable
             catch (Exception ex)
             {
                 _log($"DTS app warning: {ex.Message}");
+                await _dts.CloseAndWaitAsync(ct);
             }
         }
 
@@ -209,13 +210,14 @@ public sealed class MonitorEngine : IDisposable
             catch (Exception ex)
             {
                 _log($"DTS app warning: {ex.Message} (continuing with SoundVolumeView)");
+                await _dts.CloseAndWaitAsync(ct);
             }
 
-            _log($"Monitor fix: enable {_config.SpatialFormat}...");
+            _log("Monitor fix: DTS closed — enabling spatial on headphones...");
             _spatial.EnsureSpatialOnHeadphones();
-            await Task.Delay(1000, ct);
+            await Task.Delay(800, ct);
 
-            _log("Monitor fix: switch back to monitor...");
+            _log("Monitor fix: switching back to monitor...");
             _audio.SetDefault(mon.Id);
             await WaitForDefaultDeviceAsync(mon.Name, TimeSpan.FromSeconds(8), ct);
 

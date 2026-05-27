@@ -31,7 +31,10 @@ public partial class App : System.Windows.Application
                 _vm.FixCommand.RaiseCanExecuteChanged();
         };
 
-        _window = new MainWindow(_vm);
+        _window = new MainWindow(_vm)
+        {
+            AnimateOnFirstShow = !e.Args.Contains("--minimized", StringComparer.OrdinalIgnoreCase)
+        };
 
         var appIcon = LoadAppIcon();
         _tray = new TaskbarIcon
@@ -96,9 +99,7 @@ public partial class App : System.Windows.Application
     private void ShowMain()
     {
         if (_window is null) return;
-        _window.Show();
-        _window.WindowState = WindowState.Normal;
-        _window.Activate();
+        _window.PlayShowAnimation();
     }
 
     private void ShutdownApp()
