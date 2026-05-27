@@ -48,17 +48,23 @@ try {
         $current = Get-DtsPlaybackDevice
         $name = $current.Name
 
+        $spatial = Get-DtsSpatialHealth
+
         if ($name -like $config.HeadphonesNameMatch) {
-            $needCheck = -not (Test-DtsSpatialRecentlyOk -WithinSeconds $config.HeadphonesCheckSeconds)
+            $needCheck = $spatial.State -ne 'CorrectDts'
             if (-not $needCheck) {
-                $needCheck = -not (Test-DtsSpatialOnRegistry -RegistryGuid $config.HeadphonesRegistryGuid -DisabledGuid $config.SpatialDisabledGuid)
+                $needCheck = -not (Test-DtsSpatialRecentlyOk -WithinSeconds $config.HeadphonesCheckSeconds)
             }
 
             if ($needCheck) {
-                Write-DtsLog "Headphones active ($name): checking spatial sound..." -Quiet:$Quiet
+                if ($spatial.State -eq 'WrongFormat') {
+                    Write-DtsLog "Headphones: wrong spatial ($($spatial.ActiveGuid)), restoring DTS..." -Quiet:$Quiet
+                } else {
+                    Write-DtsLog "Headphones active ($name): checking spatial sound..." -Quiet:$Quiet
+                }
                 try {
                     $script:Busy = $true
-                    $useApp = -not (Test-DtsSpatialOnRegistry -RegistryGuid $config.HeadphonesRegistryGuid -DisabledGuid $config.SpatialDisabledGuid)
+                    $useApp = $spatial.State -ne 'CorrectDts'
                     Enable-DtsSpatialOnHeadphones -UseDtsApp:$useApp -Quiet:$Quiet
                 } catch {
                     Write-DtsLog "Headphones spatial error: $($_.Exception.Message)" -Quiet:$Quiet
@@ -73,7 +79,22 @@ try {
             }
         }
         elseif ($name -like $config.MonitorNameMatch) {
-            if ($previousName -and $previousName -notlike $config.MonitorNameMatch) {
+            if ($spatial.State -ne 'CorrectDts') {
+                if ($spatial.State -eq 'WrongFormat') {
+                    Write-DtsLog "Monitor: wrong spatial ($($spatial.ActiveGuid)), restoring DTS on headphones..." -Quiet:$Quiet
+                } else {
+                    Write-DtsLog 'Monitor: headphones spatial off, restoring...' -Quiet:$Quiet
+                }
+                try {
+                    $script:Busy = $true
+                    Enable-DtsSpatialOnHeadphones -UseDtsApp -Quiet:$Quiet
+                } catch {
+                    Write-DtsLog "Spatial restore error: $($_.Exception.Message)" -Quiet:$Quiet
+                } finally {
+                    $script:Busy = $false
+                }
+            }
+            elseif ($previousName -and $previousName -notlike $config.MonitorNameMatch) {
                 if (-not (Test-DtsMonitorFixCooldown -Seconds $config.MonitorFixCooldownSeconds)) {
                     Write-DtsLog "Switch to monitor: '$previousName' -> '$name'. Full DTS cycle..." -Quiet:$Quiet
                     try {

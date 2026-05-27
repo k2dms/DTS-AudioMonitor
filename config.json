@@ -8,5 +8,6 @@
   "PollSeconds": 3,
   "MonitorFixCooldownSeconds": 45,
   "HeadphonesCheckSeconds": 300,
-  "DtsAppRunHidden": true
+  "DtsAppRunHidden": true,
+  "SpatialFormatGuids": []
 }

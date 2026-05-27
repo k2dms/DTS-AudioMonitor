@@ -3,6 +3,7 @@ commit-msg.txt
 watch.log
 service.log
 service-state.json
+spatial-state.json
 app.log
 publish/
 release/

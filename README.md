@@ -6,12 +6,13 @@
 
 | Устройство | Что делает программа |
 |------------|----------------------|
-| **Headphones** | Только проверяет и включает пространственный звук. Устройство **не переключает**. |
-| **Переключение на XV272U F3** | Полный цикл: наушники → DTS Sound Unbound → DTS Headphone:X → снова монитор. |
+| **Headphones** | Следит за форматом spatial: если не **DTS Headphone:X** (Sonic, Dolby, выкл.) — восстанавливает. |
+| **XV272U F3 (монитор)** | То же для spatial на наушниках **без** переключения с монитора; при смене устройства — полный цикл. |
+| **Переключение на монитор** | Полный цикл: наушники → DTS (скрыто) → spatial → снова монитор. |
 
 ## Скачать (готовый exe)
 
-**[Релиз v1.1.8](https://github.com/k2dms/DTS-AudioMonitor/releases/tag/v1.1.8)** — скачайте `DtsAudioMonitor-v1.1.8-win-x64.zip` (~64 MB).
+**[Релиз v1.1.9](https://github.com/k2dms/DTS-AudioMonitor/releases/tag/v1.1.9)** — скачайте `DtsAudioMonitor-v1.1.9-win-x64.zip` (~64 MB).
 
 1. Распакуйте архив в любую папку.
 2. Запустите **`Install Start Menu.bat`** — появится в **Пуске** и в **Параметры → Приложения**.
@@ -19,7 +20,8 @@
 4. По желанию: **`Install autostart.bat`** — автозагрузка Windows.
 
 При первом запуске exe ярлык в Пуске тоже создаётся автоматически.
-4. Установите [DTS Sound Unbound](https://apps.microsoft.com/detail/9pj0nkl8mcsj) из Microsoft Store.
+
+5. Установите [DTS Sound Unbound](https://apps.microsoft.com/detail/9pj0nkl8mcsj) из Microsoft Store.
 
 .NET ставить **не нужно** — всё уже внутри архива.
 

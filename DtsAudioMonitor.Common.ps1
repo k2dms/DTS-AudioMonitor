@@ -217,30 +217,64 @@ function Set-DtsSpatialSound {
     }
 }
 
+function Get-DtsSpatialActiveGuid {
+    param([string]$RegistryGuid)
+    $guid = $RegistryGuid.Trim('{}').ToLower()
+    $base = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Render\{$guid}"
+    $names = @(
+        '{6597f250-c913-4f95-8072-9c59a52b6552},3',
+        '{6597f250-c913-4f95-8072-9c59a52b6552},2',
+        '{f8d2c69d-0989-4cc6-b197-a9e152f3b5d3},3',
+        '{f19f064d-082c-4e27-bc73-6882a1bb8e4c},2'
+    )
+    foreach ($sub in @('Properties', 'FxProperties')) {
+        $path = Join-Path $base $sub
+        if (-not (Test-Path $path)) { continue }
+        $props = Get-ItemProperty $path
+        foreach ($name in $names) {
+            if (-not $props.PSObject.Properties[$name]) { continue }
+            $val = [string]$props.$name
+            if ($val -match '^\{[0-9A-Fa-f-]{36}\}$') { return $val.ToUpper() }
+        }
+    }
+    return $null
+}
+
+function Get-DtsSpatialHealth {
+    param([object]$Config = (Get-DtsConfig))
+    $active = Get-DtsSpatialActiveGuid -RegistryGuid $config.HeadphonesRegistryGuid
+    if (-not $active) { return @{ State = 'Disabled'; ActiveGuid = $null } }
+
+    $statePath = Join-Path (Get-DtsScriptRoot) 'spatial-state.json'
+    $golden = $null
+    if (Test-Path $statePath) {
+        try { $golden = (Get-Content $statePath -Raw | ConvertFrom-Json).GoldenSpatialGuid } catch { }
+    }
+
+    $other = @(
+        '{00000000-0000-0000-0000-000000000000}',
+        '{B53D940C-B846-4831-9F76-D102B9B725A0}',
+        '{B53B4C27-1C42-4148-8533-507B42B6A0F7}',
+        '{2718AB58-91B0-4AAF-B264-508F8A8FD87C}',
+        '{DFF21CE2-F70F-11D0-B917-00A0C9223196}'
+    )
+    if ($golden -and $active -eq $golden.ToUpper()) { return @{ State = 'CorrectDts'; ActiveGuid = $active } }
+    if ($config.SpatialFormatGuids) {
+        foreach ($g in $config.SpatialFormatGuids) {
+            if ($g -and $active -eq ([string]$g).Trim().ToUpper()) { return @{ State = 'CorrectDts'; ActiveGuid = $active } }
+        }
+    }
+    if ($other -contains $active) { return @{ State = 'WrongFormat'; ActiveGuid = $active } }
+    return @{ State = 'WrongFormat'; ActiveGuid = $active }
+}
+
 function Test-DtsSpatialOnRegistry {
     param(
         [string]$RegistryGuid,
         [string]$DisabledGuid = '{00000000-0000-0000-0000-000000000000}'
     )
-    $guid = $RegistryGuid.Trim('{}').ToLower()
-    $path = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Render\{$guid}\Properties"
-    if (-not (Test-Path $path)) { return $false }
-
-    $props = Get-ItemProperty $path
-    $candidates = @(
-        '{6597f250-c913-4f95-8072-9c59a52b6552},3',
-        '{6597f250-c913-4f95-8072-9c59a52b6552},2',
-        '{f19f064d-082c-4e27-bc73-6882a1bb8e4c},2',
-        '{1da5d803-d492-4edd-8c23-e0c0ffee7f0e},8'
-    )
-    foreach ($name in $candidates) {
-        if (-not $props.PSObject.Properties[$name]) { continue }
-        $val = [string]$props.$name
-        if ($val -and $val -ne $DisabledGuid -and $val -match '^\{[0-9A-Fa-f-]{36}\}$') {
-            return $true
-        }
-    }
-    return $false
+    $h = Get-DtsSpatialHealth -Config ([pscustomobject]@{ HeadphonesRegistryGuid = $RegistryGuid; SpatialFormatGuids = @() })
+    return $h.State -eq 'CorrectDts'
 }
 
 function Test-DtsSpatialRecentlyOk {
@@ -277,7 +311,12 @@ function Enable-DtsSpatialOnHeadphones {
     Set-DtsSpatialSound -DeviceFriendlyId $config.HeadphonesFriendlyId -Format $config.SpatialFormat
     Start-Sleep -Milliseconds 500
 
-    $ok = Test-DtsSpatialOnRegistry -RegistryGuid $config.HeadphonesRegistryGuid -DisabledGuid $config.SpatialDisabledGuid
+    $active = Get-DtsSpatialActiveGuid -RegistryGuid $config.HeadphonesRegistryGuid
+    if ($active) {
+        @{ GoldenSpatialGuid = $active } | ConvertTo-Json | Set-Content (Join-Path (Get-DtsScriptRoot) 'spatial-state.json') -Encoding UTF8
+    }
+
+    $ok = (Get-DtsSpatialHealth).State -eq 'CorrectDts'
     $state = Get-DtsState
     $state.LastHeadphonesSpatialOk = (Get-Date).ToString('o')
     Set-DtsState $state
