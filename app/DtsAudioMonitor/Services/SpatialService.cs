@@ -8,14 +8,68 @@ namespace DtsAudioMonitor.Services;
 public sealed class SpatialService
 {
     private readonly string _svvPath;
+    private readonly AppConfig _config;
 
-    public SpatialService(string svvPath) => _svvPath = svvPath;
+    public SpatialService(string svvPath, AppConfig config)
+    {
+        _svvPath = svvPath;
+        _config = config;
+    }
 
-    public void SetSpatial(string deviceFriendlyId, string format)
+    public void EnsureSpatialOnHeadphones()
     {
         if (!File.Exists(_svvPath))
             throw new FileNotFoundException("SoundVolumeView not found", _svvPath);
 
+        var deviceId = ResolveHeadphonesFriendlyId();
+        var formats = GetSpatialFormatCandidates();
+
+        Exception? last = null;
+        foreach (var format in formats)
+        {
+            try
+            {
+                RunSetSpatial(deviceId, format);
+                if (IsSpatialLikelyEnabled(_config))
+                    return;
+            }
+            catch (Exception ex)
+            {
+                last = ex;
+            }
+        }
+
+        throw last ?? new InvalidOperationException("Failed to enable spatial sound (unsupported format)");
+    }
+
+    private string ResolveHeadphonesFriendlyId()
+    {
+        var configured = _config.HeadphonesFriendlyId.Trim();
+        if (!string.IsNullOrEmpty(configured))
+            return configured;
+
+        var hp = new AudioService().FindByNamePattern(_config.HeadphonesNameMatch);
+        if (hp is null)
+            throw new InvalidOperationException("Headphones device not found");
+
+        return hp.Name + @"\Device\Headphones\Render";
+    }
+
+    private IReadOnlyList<string> GetSpatialFormatCandidates()
+    {
+        var list = new List<string>();
+        if (!string.IsNullOrWhiteSpace(_config.SpatialFormat))
+            list.Add(_config.SpatialFormat.Trim());
+
+        list.Add("DTS Headphone:X");
+        list.Add("DTS Headphone");
+        list.Add("Headphone:X");
+
+        return list.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    private void RunSetSpatial(string deviceFriendlyId, string format)
+    {
         var psi = new ProcessStartInfo
         {
             FileName = _svvPath,
@@ -26,7 +80,7 @@ public sealed class SpatialService
         using var p = Process.Start(psi) ?? throw new InvalidOperationException("Failed to start SoundVolumeView");
         p.WaitForExit();
         if (p.ExitCode != 0)
-            throw new InvalidOperationException($"SetSpatial exit code {p.ExitCode}");
+            throw new InvalidOperationException($"SetSpatial failed (code {p.ExitCode}) for format '{format}'");
     }
 
     public bool IsSpatialLikelyEnabled(AppConfig config)

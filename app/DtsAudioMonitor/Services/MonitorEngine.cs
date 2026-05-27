@@ -10,6 +10,7 @@ public sealed class MonitorEngine : IDisposable
     private readonly DtsAppService _dts;
     private readonly Action<string> _log;
     private readonly Action<string, string> _status;
+    private readonly SemaphoreSlim _fixGate = new(1, 1);
 
     private CancellationTokenSource? _cts;
     private Task? _loop;
@@ -17,6 +18,7 @@ public sealed class MonitorEngine : IDisposable
     private string? _previousName;
     private DateTime _lastHeadphonesCheck = DateTime.MinValue;
     private DateTime _lastMonitorFix = DateTime.MinValue;
+    private bool _startupFixScheduled;
 
     public bool AutoEnabled { get; set; } = true;
 
@@ -41,6 +43,7 @@ public sealed class MonitorEngine : IDisposable
         if (_loop is not null) return;
         _cts = new CancellationTokenSource();
         _loop = Task.Run(() => RunAsync(_cts.Token));
+        ScheduleStartupMonitorFixIfNeeded();
         _log("Monitoring started.");
     }
 
@@ -56,16 +59,47 @@ public sealed class MonitorEngine : IDisposable
 
     public async Task RunMonitorFixNowAsync(CancellationToken ct = default)
     {
-        if (_busy) return;
-        _busy = true;
+        if (!await _fixGate.WaitAsync(0, ct))
+        {
+            _log("Monitor fix: already running, skipped.");
+            return;
+        }
+
         try
         {
             await RunMonitorFixAsync(ct);
         }
         finally
         {
-            _busy = false;
+            _fixGate.Release();
         }
+    }
+
+    private void ScheduleStartupMonitorFixIfNeeded()
+    {
+        if (_startupFixScheduled) return;
+        _startupFixScheduled = true;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(10));
+                if (!AutoEnabled || _cts?.IsCancellationRequested == true) return;
+
+                var current = _audio.GetDefaultPlayback();
+                if (current is null) return;
+                if (!IsMatch(current.Name, _config.MonitorNameMatch)) return;
+                if (_spatial.IsSpatialLikelyEnabled(_config)) return;
+
+                _log("Startup: monitor active, spatial off — auto fix...");
+                await RunMonitorFixNowAsync();
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _log($"Startup fix: {ex.Message}");
+            }
+        });
     }
 
     private async Task RunAsync(CancellationToken ct)
@@ -99,14 +133,14 @@ public sealed class MonitorEngine : IDisposable
                        || !_spatial.IsSpatialLikelyEnabled(_config);
             if (need)
             {
-                _busy = true;
+                if (!await _fixGate.WaitAsync(0, ct)) return;
                 try
                 {
                     _log($"Headphones: checking {_config.SpatialFormat}...");
                     await EnsureHeadphonesSpatialAsync(ct);
                     _lastHeadphonesCheck = DateTime.UtcNow;
                 }
-                finally { _busy = false; }
+                finally { _fixGate.Release(); }
             }
         }
         else if (IsMatch(current.Name, _config.MonitorNameMatch))
@@ -115,14 +149,9 @@ public sealed class MonitorEngine : IDisposable
                 && !IsMatch(_previousName, _config.MonitorNameMatch)
                 && (DateTime.UtcNow - _lastMonitorFix).TotalSeconds >= _config.MonitorFixCooldownSeconds)
             {
-                _busy = true;
-                try
-                {
-                    _log($"Switch to monitor: '{_previousName}' -> '{current.Name}'");
-                    await RunMonitorFixAsync(ct);
-                    _lastMonitorFix = DateTime.UtcNow;
-                }
-                finally { _busy = false; }
+                _log($"Switch to monitor: '{_previousName}' -> '{current.Name}'");
+                await RunMonitorFixNowAsync(ct);
+                _lastMonitorFix = DateTime.UtcNow;
             }
         }
 
@@ -133,36 +162,85 @@ public sealed class MonitorEngine : IDisposable
     {
         var useApp = forceDtsApp || !_spatial.IsSpatialLikelyEnabled(_config);
         if (useApp)
-            await _dts.ActivateHeadphoneXAsync(ct);
+        {
+            try
+            {
+                await _dts.TryActivateHeadphoneXAsync(ct);
+            }
+            catch (Exception ex)
+            {
+                _log($"DTS app warning: {ex.Message}");
+            }
+        }
 
-        _spatial.SetSpatial(_config.HeadphonesFriendlyId, _config.SpatialFormat);
+        _spatial.EnsureSpatialOnHeadphones();
         _log("Headphones: spatial sound OK.");
     }
 
     private async Task RunMonitorFixAsync(CancellationToken ct)
     {
-        var hp = _audio.FindByNamePattern(_config.HeadphonesNameMatch)
-                 ?? throw new InvalidOperationException("Headphones not found");
-        var mon = _audio.FindByNamePattern(_config.MonitorNameMatch)
-                  ?? throw new InvalidOperationException("Monitor not found");
+        _busy = true;
+        try
+        {
+            var hp = _audio.FindByNamePattern(_config.HeadphonesNameMatch)
+                     ?? throw new InvalidOperationException("Headphones not found");
+            var mon = _audio.FindByNamePattern(_config.MonitorNameMatch)
+                      ?? throw new InvalidOperationException("Monitor not found");
 
-        _log("Monitor fix: switch to headphones...");
-        _audio.SetDefault(hp.Id);
-        await Task.Delay(2000, ct);
+            var current = _audio.GetDefaultPlayback();
+            if (current is null || !IsMatch(current.Name, _config.HeadphonesNameMatch))
+            {
+                _log("Monitor fix: switch to headphones...");
+                _audio.SetDefault(hp.Id);
+                await WaitForDefaultDeviceAsync(hp.Name, TimeSpan.FromSeconds(8), ct);
+            }
+            else
+            {
+                _log("Monitor fix: already on headphones.");
+            }
 
-        _log("Monitor fix: DTS Sound Unbound...");
-        await _dts.ActivateHeadphoneXAsync(ct);
+            await Task.Delay(1500, ct);
 
-        _log($"Monitor fix: enable {_config.SpatialFormat}...");
-        _spatial.SetSpatial(_config.HeadphonesFriendlyId, _config.SpatialFormat);
-        await Task.Delay(800, ct);
+            _log("Monitor fix: DTS Sound Unbound...");
+            try
+            {
+                await _dts.TryActivateHeadphoneXAsync(ct);
+            }
+            catch (Exception ex)
+            {
+                _log($"DTS app warning: {ex.Message} (continuing with SoundVolumeView)");
+            }
 
-        _log("Monitor fix: switch back to monitor...");
-        _audio.SetDefault(mon.Id);
+            _log($"Monitor fix: enable {_config.SpatialFormat}...");
+            _spatial.EnsureSpatialOnHeadphones();
+            await Task.Delay(1000, ct);
 
-        _lastHeadphonesCheck = DateTime.UtcNow;
-        _log("Monitor fix: done.");
-        _status(mon.Name, "monitor");
+            _log("Monitor fix: switch back to monitor...");
+            _audio.SetDefault(mon.Id);
+            await WaitForDefaultDeviceAsync(mon.Name, TimeSpan.FromSeconds(8), ct);
+
+            _lastHeadphonesCheck = DateTime.UtcNow;
+            _lastMonitorFix = DateTime.UtcNow;
+            _log("Monitor fix: done.");
+            _status(mon.Name, "monitor");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task WaitForDefaultDeviceAsync(string nameContains, TimeSpan timeout, CancellationToken ct)
+    {
+        var deadline = DateTime.UtcNow + timeout;
+        while (DateTime.UtcNow < deadline)
+        {
+            ct.ThrowIfCancellationRequested();
+            var d = _audio.GetDefaultPlayback();
+            if (d is not null && d.Name.Contains(nameContains, StringComparison.OrdinalIgnoreCase))
+                return;
+            await Task.Delay(250, ct);
+        }
     }
 
     private static bool IsMatch(string name, string pattern)
@@ -179,5 +257,9 @@ public sealed class MonitorEngine : IDisposable
         return "other";
     }
 
-    public void Dispose() => Stop();
+    public void Dispose()
+    {
+        Stop();
+        _fixGate.Dispose();
+    }
 }

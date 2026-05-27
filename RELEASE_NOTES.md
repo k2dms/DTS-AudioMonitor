@@ -1,20 +1,16 @@
-# DTS Audio Monitor v1.1.3
+# DTS Audio Monitor v1.1.4
 
 ## Исправления
 
-- Чекбокс «Запускать с Windows» вынесен в нижнюю панель и больше не обрезается
-- Убрана лишняя вертикальная полоса прокрутки у окна
-- Чуть увеличена высота окна, компактнее блок журнала
+- Надёжнее клик по «DTS Headphone:X» в DTS Sound Unbound (несколько UI-паттернов и повторы)
+- Если DTS не открылся — цикл всё равно продолжается через SoundVolumeView
+- Несколько вариантов имени spatial-формата, ожидание переключения устройства
+- Авто-фикс через ~10 с после загрузки Windows, если активен монитор без spatial
+- Защита от одновременного двойного «monitor fix»
 
 ## Установка
 
-1. Скачайте `DtsAudioMonitor-v1.1.3-win-x64.zip` из Assets.
+1. Скачайте `DtsAudioMonitor-v1.1.4-win-x64.zip` из Assets.
 2. Распакуйте в любую папку.
 3. Запустите **`DtsAudioMonitor.exe`** или **`Start DTS Audio Monitor.bat`**.
-4. (Опционально) **`Install autostart.bat`** — автозагрузка Windows.
 
-## Требования
-
-- Windows 10/11 x64
-- [DTS Sound Unbound](https://apps.microsoft.com/detail/9pj0nkl8mcsj)
-- .NET **не требуется** (self-contained)

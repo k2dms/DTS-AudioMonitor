@@ -88,13 +88,32 @@ function Find-DtsByAutomationId {
 function Invoke-DtsUiClick {
     param([Windows.Automation.AutomationElement]$Element)
     if (-not $Element) { return $false }
-    try {
-        $invoke = $Element.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)
-        $invoke.Invoke()
-        return $true
-    } catch {
-        return $false
+
+    $patterns = @(
+        [Windows.Automation.InvokePattern]::Pattern,
+        [Windows.Automation.SelectionItemPattern]::Pattern,
+        [Windows.Automation.TogglePattern]::Pattern
+    )
+    foreach ($patternId in $patterns) {
+        try {
+            $pattern = $Element.GetCurrentPattern($patternId)
+            if ($pattern -is [Windows.Automation.InvokePattern]) {
+                $pattern.Invoke()
+                return $true
+            }
+            if ($pattern -is [Windows.Automation.SelectionItemPattern]) {
+                $pattern.Select()
+                return $true
+            }
+            if ($pattern -is [Windows.Automation.TogglePattern]) {
+                if ($pattern.Current.ToggleState -ne [Windows.Automation.ToggleState]::On) {
+                    $pattern.Toggle()
+                }
+                return $true
+            }
+        } catch { }
     }
+    return $false
 }
 
 function Start-DtsSoundUnboundApp {
@@ -116,7 +135,16 @@ function Start-DtsSoundUnboundApp {
     }
     if (-not $window) { throw 'DTS Sound Unbound window not found' }
 
-    Invoke-DtsUiClick (Find-DtsByAutomationId $window 'HPXRadioButton') | Out-Null
+    $clicked = $false
+    for ($try = 0; $try -lt 25; $try++) {
+        $hpx = Find-DtsByAutomationId $window 'HPXRadioButton'
+        if ($hpx -and (Invoke-DtsUiClick $hpx)) {
+            $clicked = $true
+            break
+        }
+        Start-Sleep -Milliseconds 250
+    }
+    if (-not $clicked) { throw 'DTS Headphone:X control not found or not clickable' }
     Start-Sleep -Milliseconds 700
 
     $notLicensed = $window.FindAll([Windows.Automation.TreeScope]::Descendants,
@@ -230,7 +258,7 @@ function Enable-DtsMonitorPlaybackFix {
 
     Write-DtsLog "Monitor fix: switch to Headphones ($($hp.Index))..." -Quiet:$Quiet
     Set-AudioDevice -Index $hp.Index | Out-Null
-    Start-Sleep -Seconds 2
+    Start-Sleep -Seconds 3
 
     Write-DtsLog 'Monitor fix: DTS Sound Unbound...' -Quiet:$Quiet
     Start-DtsSoundUnboundApp -Quiet:$Quiet

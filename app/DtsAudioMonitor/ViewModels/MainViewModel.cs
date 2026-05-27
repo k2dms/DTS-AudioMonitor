@@ -32,7 +32,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         _dispatcher = Application.Current.Dispatcher;
         _config = AppConfig.Load(AppPaths.ConfigPath);
 
-        var spatial = new SpatialService(AppPaths.SoundVolumeViewExe);
+        var spatial = new SpatialService(AppPaths.SoundVolumeViewExe, _config);
         var dts = new DtsAppService();
         _engine = new MonitorEngine(
             _config,
