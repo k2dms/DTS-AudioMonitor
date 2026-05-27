@@ -11,11 +11,14 @@
 
 ## Скачать (готовый exe)
 
-**[Релиз v1.1.4](https://github.com/k2dms/DTS-AudioMonitor/releases/tag/v1.1.4)** — скачайте `DtsAudioMonitor-v1.1.4-win-x64.zip` (~64 MB).
+**[Релиз v1.1.5](https://github.com/k2dms/DTS-AudioMonitor/releases/tag/v1.1.5)** — скачайте `DtsAudioMonitor-v1.1.5-win-x64.zip` (~64 MB).
 
 1. Распакуйте архив в любую папку.
-2. Запустите **`DtsAudioMonitor.exe`** (или `Start DTS Audio Monitor.bat`).
-3. По желанию: **`Install autostart.bat`** — автозагрузка Windows.
+2. Запустите **`Install Start Menu.bat`** — появится в **Пуске** и в **Параметры → Приложения**.
+3. Запустите **`DtsAudioMonitor.exe`** (или `Start DTS Audio Monitor.bat`).
+4. По желанию: **`Install autostart.bat`** — автозагрузка Windows.
+
+При первом запуске exe ярлык в Пуске тоже создаётся автоматически.
 4. Установите [DTS Sound Unbound](https://apps.microsoft.com/detail/9pj0nkl8mcsj) из Microsoft Store.
 
 .NET ставить **не нужно** — всё уже внутри архива.

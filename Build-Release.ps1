@@ -3,7 +3,7 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $proj = Join-Path $root 'app\DtsAudioMonitor\DtsAudioMonitor.csproj'
 $outDir = Join-Path $root 'release\DtsAudioMonitor'
-$version = '1.1.4'
+$version = '1.1.5'
 $zipPath = Join-Path $root "release\DtsAudioMonitor-v$version-win-x64.zip"
 
 # Dependencies
@@ -52,12 +52,25 @@ echo Autostart enabled: %LNK%
 pause
 '@ | Set-Content (Join-Path $outDir 'Install autostart.bat') -Encoding ASCII
 
+Copy-Item (Join-Path $root 'Install-DtsShell.ps1') (Join-Path $outDir 'Install-DtsShell.ps1') -Force
+Copy-Item (Join-Path $root 'Uninstall-DtsApp.ps1') (Join-Path $outDir 'Uninstall-DtsApp.ps1') -Force
+
 @'
-# DTS Audio Monitor v1.1.4
+@echo off
+cd /d "%~dp0"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "& { . '%~dp0Install-DtsShell.ps1'; Install-DtsStartMenu -ExePath '%~dp0DtsAudioMonitor.exe' -Version '1.1.5' }"
+echo.
+echo Done. Open Start menu and search: DTS Audio Monitor
+pause
+'@ | Set-Content (Join-Path $outDir 'Install Start Menu.bat') -Encoding ASCII
+
+@'
+# DTS Audio Monitor v1.1.5
 
 1. Распакуйте архив в любую папку (например C:\Apps\DtsAudioMonitor)
-2. Запустите **DtsAudioMonitor.exe** или **Start DTS Audio Monitor.bat**
-3. Для автозагрузки: **Install autostart.bat**
+2. Запустите **Install Start Menu.bat** (ярлык в Пуске и запись в «Приложения»)
+3. Запустите **DtsAudioMonitor.exe** или **Start DTS Audio Monitor.bat**
+4. Для автозагрузки: **Install autostart.bat**
 
 Иконка в трее (рядом с часами). Двойной щелчок — открыть окно.
 

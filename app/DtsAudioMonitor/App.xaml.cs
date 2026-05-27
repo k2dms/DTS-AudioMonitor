@@ -2,6 +2,7 @@
 using System.IO;
 using System.Windows;
 using Hardcodet.Wpf.TaskbarNotification;
+using DtsAudioMonitor.Services;
 using DtsAudioMonitor.ViewModels;
 
 namespace DtsAudioMonitor;
@@ -15,6 +16,7 @@ public partial class App : System.Windows.Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        ShellRegistration.Apply();
 
         _vm = new MainViewModel();
         _vm.FixCommand = new RelayCommand(_vm.FixMonitorAsync, () => _vm.CanFix);

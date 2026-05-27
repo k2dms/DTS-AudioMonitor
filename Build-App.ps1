@@ -13,6 +13,8 @@ $env:Path = [System.Environment]::GetEnvironmentVariable('Path', 'Machine') + ';
 dotnet publish $proj -c Release -r win-x64 --self-contained false -o (Join-Path $root 'publish')
 
 Copy-Item (Join-Path $root 'config.json') (Join-Path $root 'publish\config.json') -Force
+Copy-Item (Join-Path $root 'Uninstall-DtsApp.ps1') (Join-Path $root 'publish\Uninstall-DtsApp.ps1') -Force
+Copy-Item (Join-Path $root 'Install-DtsShell.ps1') (Join-Path $root 'publish\Install-DtsShell.ps1') -Force
 if (Test-Path $svvSrc) {
     $dest = Join-Path $root 'publish\SoundVolumeView'
     New-Item -ItemType Directory -Force -Path $dest | Out-Null
