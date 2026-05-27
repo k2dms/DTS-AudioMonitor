@@ -64,15 +64,9 @@ try {
                 }
                 try {
                     $script:Busy = $true
-                    $useApp = $spatial.State -ne 'CorrectDts'
-                    Enable-DtsSpatialOnHeadphones -UseDtsApp:$useApp -Quiet:$Quiet
+                    Enable-DtsSpatialOnHeadphones -Quiet:$Quiet
                 } catch {
                     Write-DtsLog "Headphones spatial error: $($_.Exception.Message)" -Quiet:$Quiet
-                    try {
-                        Enable-DtsSpatialOnHeadphones -UseDtsApp -Quiet:$Quiet
-                    } catch {
-                        Write-DtsLog "Headphones spatial retry failed: $($_.Exception.Message)" -Quiet:$Quiet
-                    }
                 } finally {
                     $script:Busy = $false
                 }
@@ -87,7 +81,7 @@ try {
                 }
                 try {
                     $script:Busy = $true
-                    Enable-DtsSpatialOnHeadphones -UseDtsApp -Quiet:$Quiet
+                    Enable-DtsSpatialOnHeadphones -Quiet:$Quiet
                 } catch {
                     Write-DtsLog "Spatial restore error: $($_.Exception.Message)" -Quiet:$Quiet
                 } finally {

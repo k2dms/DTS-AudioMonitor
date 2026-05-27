@@ -265,7 +265,7 @@ function Get-DtsSpatialHealth {
         }
     }
     if ($other -contains $active) { return @{ State = 'WrongFormat'; ActiveGuid = $active } }
-    return @{ State = 'WrongFormat'; ActiveGuid = $active }
+    return @{ State = 'CorrectDts'; ActiveGuid = $active }
 }
 
 function Test-DtsSpatialOnRegistry {
@@ -302,9 +302,10 @@ function Enable-DtsSpatialOnHeadphones {
         [switch]$Quiet
     )
     $config = Get-DtsConfig
-    Write-DtsLog "Headphones: ensure $($config.SpatialFormat)..." -Quiet:$Quiet
+    Write-DtsLog "Headphones: ensure $($config.SpatialFormat) (SoundVolumeView)..." -Quiet:$Quiet
 
     if ($UseDtsApp) {
+        Write-DtsLog 'Opening DTS Sound Unbound (manual / fallback only)...' -Quiet:$Quiet
         Start-DtsSoundUnboundApp -Quiet:$Quiet
     }
 

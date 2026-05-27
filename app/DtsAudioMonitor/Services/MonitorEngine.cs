@@ -4,7 +4,7 @@ namespace DtsAudioMonitor.Services;
 
 public sealed class MonitorEngine : IDisposable
 {
-  private static readonly TimeSpan SpatialWrongFixCooldown = TimeSpan.FromSeconds(20);
+  private static readonly TimeSpan SpatialAutoFixCooldown = TimeSpan.FromSeconds(60);
 
   private readonly AppConfig _config;
   private readonly AudioService _audio;
@@ -20,7 +20,7 @@ public sealed class MonitorEngine : IDisposable
   private string? _previousName;
   private DateTime _lastHeadphonesCheck = DateTime.MinValue;
   private DateTime _lastMonitorFix = DateTime.MinValue;
-  private DateTime _lastWrongSpatialFix = DateTime.MinValue;
+  private DateTime _lastSpatialAutoFix = DateTime.MinValue;
   private bool _startupFixScheduled;
 
   public bool AutoEnabled { get; set; } = true;
@@ -46,7 +46,7 @@ public sealed class MonitorEngine : IDisposable
     if (_loop is not null) return;
     _cts = new CancellationTokenSource();
     _loop = Task.Run(() => RunAsync(_cts.Token));
-    ScheduleStartupMonitorFixIfNeeded();
+    ScheduleStartupSpatialCheckIfNeeded();
     _log("Monitoring started.");
   }
 
@@ -60,6 +60,7 @@ public sealed class MonitorEngine : IDisposable
     _log("Monitoring stopped.");
   }
 
+  /// <summary>Manual button: full cycle with optional DTS app if configured.</summary>
   public async Task RunMonitorFixNowAsync(CancellationToken ct = default)
   {
     if (!await _fixGate.WaitAsync(0, ct))
@@ -70,7 +71,7 @@ public sealed class MonitorEngine : IDisposable
 
     try
     {
-      await RunMonitorFixAsync(ct);
+      await RunMonitorFixAsync(ct, allowDtsApp: _config.UseDtsAppOnManualFix);
     }
     finally
     {
@@ -78,7 +79,7 @@ public sealed class MonitorEngine : IDisposable
     }
   }
 
-  private void ScheduleStartupMonitorFixIfNeeded()
+  private void ScheduleStartupSpatialCheckIfNeeded()
   {
     if (_startupFixScheduled) return;
     _startupFixScheduled = true;
@@ -87,19 +88,14 @@ public sealed class MonitorEngine : IDisposable
     {
       try
       {
-        await Task.Delay(TimeSpan.FromSeconds(10));
+        await Task.Delay(TimeSpan.FromSeconds(12));
         if (!AutoEnabled || _cts?.IsCancellationRequested == true) return;
-
-        var current = _audio.GetDefaultPlayback();
-        if (current is null || !DevicePattern.IsMatch(current.Name, _config.MonitorNameMatch)) return;
 
         var spatial = _spatial.Evaluate();
         if (!spatial.NeedsFix) return;
 
-        _log(spatial.IsWrongFormat
-          ? $"Startup: wrong spatial ({spatial.ActiveGuid}), auto fix..."
-          : "Startup: monitor active, spatial off — auto fix...");
-        await RunMonitorFixNowAsync();
+        _log("Startup: spatial check (registry only)...");
+        await TryRunSilentSpatialRestoreAsync(CancellationToken.None, spatial);
       }
       catch (Exception ex) when (ex is not OperationCanceledException)
       {
@@ -137,22 +133,21 @@ public sealed class MonitorEngine : IDisposable
     if (DevicePattern.IsMatch(current.Name, _config.HeadphonesNameMatch))
     {
       if (ShouldCheckHeadphones(spatial))
-        await TryRunHeadphonesSpatialFixAsync(ct, spatial);
+        await TryRunSilentSpatialRestoreAsync(ct, spatial);
     }
     else if (DevicePattern.IsMatch(current.Name, _config.MonitorNameMatch))
     {
-      if (spatial.NeedsFix && CanFixWrongSpatial())
+      if (spatial.NeedsFix && CanRunAutoSpatialFix())
       {
         _log(spatial.IsWrongFormat
-          ? $"Monitor: wrong spatial ({spatial.ActiveGuid}) → restoring DTS Headphone:X..."
-          : "Monitor: headphones spatial off → restoring...");
-        await TryRunHeadphonesSpatialFixAsync(ct, spatial);
+          ? $"Monitor: wrong spatial ({spatial.ActiveGuid}) → fixing via Windows (no DTS app)..."
+          : "Monitor: spatial off on headphones → fixing via Windows...");
+        await TryRunSilentSpatialRestoreAsync(ct, spatial);
       }
-      else if (ShouldRunMonitorTransitionFix(current.Name))
+      else if (ShouldRunMonitorTransitionFix())
       {
         _log($"Switch to monitor: '{_previousName}' -> '{current.Name}'");
-        await RunMonitorFixNowAsync(ct);
-        _lastMonitorFix = DateTime.UtcNow;
+        await RunMonitorTransitionFixAsync(ct);
       }
     }
 
@@ -160,25 +155,42 @@ public sealed class MonitorEngine : IDisposable
   }
 
   private bool ShouldCheckHeadphones(SpatialHealth spatial) =>
-    spatial.NeedsFix
-    || (DateTime.UtcNow - _lastHeadphonesCheck).TotalSeconds >= _config.HeadphonesCheckSeconds;
+    spatial.NeedsFix && CanRunAutoSpatialFix()
+    || (DateTime.UtcNow - _lastHeadphonesCheck).TotalSeconds >= _config.HeadphonesCheckSeconds
+       && spatial.NeedsFix;
 
-  private bool ShouldRunMonitorTransitionFix(string currentName) =>
+  private bool ShouldRunMonitorTransitionFix() =>
     _previousName is not null
     && !DevicePattern.IsMatch(_previousName, _config.MonitorNameMatch)
     && (DateTime.UtcNow - _lastMonitorFix).TotalSeconds >= _config.MonitorFixCooldownSeconds;
 
-  private bool CanFixWrongSpatial() =>
-    (DateTime.UtcNow - _lastWrongSpatialFix) >= SpatialWrongFixCooldown;
+  private bool CanRunAutoSpatialFix() =>
+    DateTime.UtcNow - _lastSpatialAutoFix >= SpatialAutoFixCooldown;
 
-  private async Task TryRunHeadphonesSpatialFixAsync(CancellationToken ct, SpatialHealth spatial)
+  /// <summary>Registry check + SoundVolumeView only — never opens DTS Sound Unbound.</summary>
+  private async Task TryRunSilentSpatialRestoreAsync(CancellationToken ct, SpatialHealth spatial)
   {
     if (!await _fixGate.WaitAsync(0, ct)) return;
     try
     {
-      await RestoreHeadphonesSpatialAsync(ct, spatial, useDtsApp: spatial.IsWrongFormat || spatial.IsDisabled);
+      if (spatial.IsWrongFormat)
+        _log($"Spatial: was {spatial.ActiveGuid}, setting {_config.SpatialFormat} (SVV)...");
+      else
+        _log($"Spatial: enabling {_config.SpatialFormat} (SVV)...");
+
+      var ok = _spatial.TryRestoreViaSoundVolumeView();
+      if (ok)
+      {
+        _log("Spatial: OK (Windows / SoundVolumeView).");
+      }
+      else
+      {
+        _log("Spatial: SVV could not apply — use «Применить DTS для монитора» if needed.");
+      }
+
       _lastHeadphonesCheck = DateTime.UtcNow;
-      _lastWrongSpatialFix = DateTime.UtcNow;
+      _lastSpatialAutoFix = DateTime.UtcNow;
+      await Task.CompletedTask;
     }
     finally
     {
@@ -186,31 +198,36 @@ public sealed class MonitorEngine : IDisposable
     }
   }
 
-  private async Task RestoreHeadphonesSpatialAsync(CancellationToken ct, SpatialHealth spatial, bool useDtsApp)
+  private async Task RunMonitorTransitionFixAsync(CancellationToken ct)
   {
-    if (spatial.IsWrongFormat)
-      _log($"Headphones: wrong spatial ({spatial.ActiveGuid}), switching to {_config.SpatialFormat}...");
-    else
-      _log($"Headphones: ensuring {_config.SpatialFormat}...");
-
-    if (useDtsApp)
+    if (!await _fixGate.WaitAsync(0, ct)) return;
+    try
     {
-      try
+      _busy = true;
+      var spatial = _spatial.Evaluate();
+      var ok = _spatial.TryRestoreViaSoundVolumeView();
+      if (!ok)
       {
-        await _dts.TryActivateHeadphoneXAsync(ct);
+        _log("Transition: SVV fix failed, trying device switch...");
+        await RunMonitorFixAsync(ct, allowDtsApp: false);
       }
-      catch (Exception ex)
+      else
       {
-        _log($"DTS app warning: {ex.Message}");
-        await _dts.CloseAndWaitAsync(ct);
+        _log("Transition: spatial OK on headphones (no device switch).");
       }
-    }
 
-    _spatial.EnsureSpatialOnHeadphones();
-    _log("Headphones: DTS Headphone:X OK.");
+      _lastMonitorFix = DateTime.UtcNow;
+      _lastHeadphonesCheck = DateTime.UtcNow;
+      _lastSpatialAutoFix = DateTime.UtcNow;
+    }
+    finally
+    {
+      _busy = false;
+      _fixGate.Release();
+    }
   }
 
-  private async Task RunMonitorFixAsync(CancellationToken ct)
+  private async Task RunMonitorFixAsync(CancellationToken ct, bool allowDtsApp)
   {
     _busy = true;
     try
@@ -226,14 +243,34 @@ public sealed class MonitorEngine : IDisposable
         _log("Monitor fix: switch to headphones...");
         _audio.SetDefault(hp.Id);
         await WaitForDefaultDeviceAsync(hp.Name, TimeSpan.FromSeconds(8), ct);
+        await Task.Delay(1500, ct);
       }
 
-      await Task.Delay(1500, ct);
-
       var spatial = _spatial.Evaluate();
-      await RestoreHeadphonesSpatialAsync(ct, spatial, useDtsApp: true);
+      var ok = _spatial.TryRestoreViaSoundVolumeView();
 
-      await Task.Delay(800, ct);
+      if (!ok && allowDtsApp)
+      {
+        _log(_config.DtsAppRunHidden
+          ? "Monitor fix: SVV failed, trying DTS Sound Unbound (hidden)..."
+          : "Monitor fix: SVV failed, trying DTS Sound Unbound...");
+        try
+        {
+          await _dts.TryActivateHeadphoneXAsync(ct);
+        }
+        catch (Exception ex)
+        {
+          _log($"DTS app warning: {ex.Message}");
+          await _dts.CloseAndWaitAsync(ct);
+        }
+
+        ok = _spatial.TryRestoreViaSoundVolumeView();
+      }
+
+      if (!ok)
+        _log("Monitor fix: could not confirm spatial sound.");
+
+      await Task.Delay(500, ct);
 
       _log("Monitor fix: switching back to monitor...");
       _audio.SetDefault(mon.Id);
@@ -241,7 +278,7 @@ public sealed class MonitorEngine : IDisposable
 
       _lastHeadphonesCheck = DateTime.UtcNow;
       _lastMonitorFix = DateTime.UtcNow;
-      _lastWrongSpatialFix = DateTime.UtcNow;
+      _lastSpatialAutoFix = DateTime.UtcNow;
       _log("Monitor fix: done.");
       _status(mon.Name, "monitor");
     }

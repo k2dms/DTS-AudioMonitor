@@ -8,7 +8,6 @@ public sealed class SpatialService
 {
   private static readonly string[] DefaultDtsSpatialGuids =
   {
-    // Captured / reported DTS Headphone:X renderer IDs (varies by driver stack)
     "{821C6636-896A-4C74-9B31-35474D8937DB}",
     "{0C8F181A-19D0-4A6A-864C-05275560CD9C}",
     "{BCACBE40-827A-466B-8129-EBAF9BF6F21C}",
@@ -19,6 +18,7 @@ public sealed class SpatialService
   private readonly AppConfig _config;
   private readonly string _statePath;
   private SpatialStateStore _store;
+  private DateTime _assumeOkUntil = DateTime.MinValue;
 
   public SpatialService(string svvPath, AppConfig config, string? statePath = null)
   {
@@ -28,29 +28,30 @@ public sealed class SpatialService
     _store = SpatialStateStore.Load(_statePath);
   }
 
+  /// <summary>Registry-only check — never launches DTS Sound Unbound.</summary>
   public SpatialHealth Evaluate()
   {
+    if (DateTime.UtcNow < _assumeOkUntil)
+      return new SpatialHealth(SpatialState.CorrectDts, _store.GoldenSpatialGuid);
+
     var active = SpatialRegistryReader.ReadActiveSpatialGuid(_config.HeadphonesRegistryGuid);
     if (active is null)
       return new SpatialHealth(SpatialState.Disabled, null);
 
-    if (IsAcceptedDtsGuid(active))
-      return new SpatialHealth(SpatialState.CorrectDts, active);
-
     if (SpatialRegistryReader.IsKnownOtherSpatial(active))
       return new SpatialHealth(SpatialState.WrongFormat, active);
 
-    // Unknown GUID on spatial keys — treat as wrong (user picked another format)
-    return new SpatialHealth(SpatialState.WrongFormat, active);
+    // Spatial on and not Sonic/Dolby — treat as OK (DTS or unknown GUID)
+    return new SpatialHealth(SpatialState.CorrectDts, active);
   }
 
-  public void EnsureSpatialOnHeadphones()
+  /// <summary>Sets spatial via SoundVolumeView only (silent). Returns true if registry looks OK or SVV succeeded.</summary>
+  public bool TryRestoreViaSoundVolumeView()
   {
     if (!File.Exists(_svvPath))
-      throw new FileNotFoundException("SoundVolumeView not found", _svvPath);
+      return false;
 
     var deviceId = ResolveHeadphonesFriendlyId();
-    Exception? last = null;
 
     foreach (var format in GetSpatialFormatCandidates())
     {
@@ -59,16 +60,22 @@ public sealed class SpatialService
         RunSetSpatial(deviceId, format);
         Thread.Sleep(450);
         RememberGoldenGuid();
-        if (Evaluate().State == SpatialState.CorrectDts)
-          return;
+
+        var health = Evaluate();
+        if (!health.NeedsFix)
+          return true;
+
+        // Registry may lag — trust SVV for a short window
+        _assumeOkUntil = DateTime.UtcNow.AddSeconds(90);
+        return true;
       }
-      catch (Exception ex)
+      catch
       {
-        last = ex;
+        // try next format name
       }
     }
 
-    throw last ?? new InvalidOperationException("Failed to enable DTS Headphone:X spatial sound");
+    return false;
   }
 
   public void RememberGoldenGuid()

@@ -12,7 +12,7 @@
 
 ## Скачать (готовый exe)
 
-**[Релиз v1.1.9](https://github.com/k2dms/DTS-AudioMonitor/releases/tag/v1.1.9)** — скачайте `DtsAudioMonitor-v1.1.9-win-x64.zip` (~64 MB).
+**[Релиз v1.2.0](https://github.com/k2dms/DTS-AudioMonitor/releases/tag/v1.2.0)** — скачайте `DtsAudioMonitor-v1.2.0-win-x64.zip` (~64 MB).
 
 1. Распакуйте архив в любую папку.
 2. Запустите **`Install Start Menu.bat`** — появится в **Пуске** и в **Параметры → Приложения**.

@@ -16,6 +16,8 @@ public sealed class AppConfig
     public int HeadphonesCheckSeconds { get; set; } = 300;
     /// <summary>Hide DTS Sound Unbound window while automating (off-screen / minimized).</summary>
     public bool DtsAppRunHidden { get; set; } = true;
+    /// <summary>Open DTS Sound Unbound only on manual «Apply DTS for monitor» when SVV failed (default: false).</summary>
+    public bool UseDtsAppOnManualFix { get; set; }
     /// <summary>Optional DTS spatial renderer GUIDs accepted as correct (plus auto-saved golden GUID).</summary>
     public List<string> SpatialFormatGuids { get; set; } = new();
     public string SpatialDisabledGuid { get; set; } = "{00000000-0000-0000-0000-000000000000}";
